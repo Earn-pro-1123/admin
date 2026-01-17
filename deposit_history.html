@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deposit History - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; color: #333; }
+
+        /* Header & Search Area */
+        .header-section {
+            background: #00a651; color: white; padding: 15px;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header-top { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .header-top i { cursor: pointer; font-size: 20px; }
+
+        .search-box {
+            background: rgba(255,255,255,0.2); border-radius: 10px;
+            display: flex; align-items: center; padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .search-box input {
+            background: none; border: none; color: white; width: 100%;
+            outline: none; margin-left: 10px; font-size: 14px;
+        }
+        .search-box input::placeholder { color: rgba(255,255,255,0.7); }
+
+        /* Tabs */
+        .tabs {
+            display: flex; background: white; padding: 10px;
+            justify-content: space-around; border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 8px 20px; border-radius: 20px; font-weight: bold;
+            font-size: 14px; cursor: pointer; color: #666; transition: 0.3s;
+        }
+        .tab.active { background: #00a651; color: white; }
+
+        /* List container */
+        .container { padding: 15px; }
+        .history-card {
+            background: white; border-radius: 12px; padding: 15px;
+            margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .info h4 { font-size: 15px; color: #333; margin-bottom: 4px; }
+        .info p { font-size: 11px; color: #666; margin-top: 2px; }
+        .admin-num { color: #e67e22; font-weight: 600; }
+        
+        .status-badge {
+            padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;
+            display: inline-block; margin-top: 5px;
+        }
+        .status-success { background: #e8f5e9; color: #2e7d32; }
+        .status-rejected { background: #feebeb; color: #c62828; }
+
+        .amount { font-weight: 800; font-size: 16px; color: #00a651; text-align: right; }
+        
+        #emptyMsg { text-align: center; margin-top: 50px; color: #999; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header-section">
+    <div class="header-top">
+        <i class="fa-solid fa-arrow-left" onclick="window.location.href='deposit-dashboard.html'"></i>
+        <b>ডিপোজিট হিস্টোরি</b>
+    </div>
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Phone বা TrxID দিয়ে খুঁজুন..." onkeyup="filterHistory()">
+    </div>
+</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('success', this)">Approved</div>
+    <div class="tab" onclick="switchTab('rejected', this)">Rejected</div>
+</div>
+
+<div class="container" id="historyList"></div>
+
+<div id="emptyMsg">কোনো হিস্টোরি পাওয়া যায়নি।</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let currentStatus = 'success';
+    let masterHistoryData = []; // সব ডাটা জমা রাখার জন্য
+    let unsubscribe = null;
+
+    window.switchTab = (status, el) => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        currentStatus = status;
+        document.getElementById('searchInput').value = ""; // ট্যাব বদলালে সার্চ ক্লিয়ার হবে
+        loadHistory();
+    };
+
+    function loadHistory() {
+        const listContainer = document.getElementById('historyList');
+        const emptyMsg = document.getElementById('emptyMsg');
+        
+        if (unsubscribe) unsubscribe();
+
+        const q = query(
+            collection(db, "depositRequests"),
+            where("status", "==", currentStatus),
+            orderBy("processedAt", "desc")
+        );
+
+        unsubscribe = onSnapshot(q, (snapshot) => {
+            masterHistoryData = [];
+            snapshot.forEach(doc => masterHistoryData.push({ id: doc.id, ...doc.data() }));
+            renderHistory(masterHistoryData);
+        }, (error) => {
+            console.error("Error loading history:", error);
+            // যদি ইনডেক্স এরর থাকে তবে কনসোলে লিংক আসবে
+        });
+    }
+
+    function renderHistory(data) {
+        const listContainer = document.getElementById('historyList');
+        const emptyMsg = document.getElementById('emptyMsg');
+        
+        listContainer.innerHTML = "";
+        if (data.length === 0) {
+            emptyMsg.style.display = "block";
+            return;
+        }
+        emptyMsg.style.display = "none";
+
+        data.forEach((item) => {
+            const date = item.processedAt ? item.processedAt.toDate().toLocaleString('en-BD') : "N/A";
+            
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="info">
+                    <h4>${item.userPhone || 'User'}</h4>
+                    <p><b>To Admin:</b> <span class="admin-num">${item.adminNumber || 'N/A'}</span></p>
+                    <p><b>TrxID:</b> ${item.transactionId}</p>
+                    <p><i class="fa-regular fa-clock"></i> ${date}</p>
+                </div>
+                <div style="text-align: right;">
+                    <div class="amount">৳${item.amount}</div>
+                    <div class="status-badge ${currentStatus === 'success' ? 'status-success' : 'status-rejected'}">
+                        ${currentStatus === 'success' ? 'SUCCESS' : 'REJECTED'}
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+    // সার্চ ফিল্টার ফাংশন
+    window.filterHistory = () => {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const filteredData = masterHistoryData.filter(item => 
+            (item.userPhone && item.userPhone.includes(searchTerm)) || 
+            (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm))
+        );
+        renderHistory(filteredData);
+    };
+
+    loadHistory();
+</script>
+
+</body>
+</html>

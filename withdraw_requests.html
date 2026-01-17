@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Withdraw Requests</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #00a651; --secondary: #ff9900; --bg: #f4f7f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: #333; }
+
+        .header {
+            background: var(--primary); color: white; padding: 15px;
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .header i { cursor: pointer; font-size: 20px; }
+
+        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
+        
+        .withdraw-card {
+            background: white; border-radius: 18px; padding: 18px; margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 6px solid var(--secondary);
+        }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .amount { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .method-tag { 
+            padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: bold;
+            text-transform: uppercase; background: #fff5e6; color: var(--secondary);
+        }
+
+        .user-info { display: grid; gap: 6px; font-size: 13px; color: #555; margin-bottom: 10px; }
+        .info-item { display: flex; align-items: center; gap: 8px; }
+        .info-item i { width: 16px; color: #888; text-align: center; }
+
+        .number-box {
+            background: #f8f9fa; padding: 12px; border-radius: 12px; margin-top: 5px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px dashed #ccc;
+        }
+        .target-number { font-size: 17px; font-weight: 700; color: #2d3436; }
+        
+        .copy-btn {
+            background: var(--primary); color: white; border: none; padding: 6px 14px;
+            border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px;
+        }
+
+        .actions { display: flex; gap: 10px; margin-top: 18px; }
+        .btn {
+            flex: 1; border: none; padding: 12px; border-radius: 12px;
+            font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.3s;
+        }
+        .btn-approve { background: var(--primary); color: white; }
+        .btn-reject { background: #feebeb; color: #e74c3c; }
+        
+        #loading-ui { text-align: center; margin-top: 50px; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fa-solid fa-chevron-left" onclick="window.location.href='withdraw-dashboard.html'"></i>
+        <b>Withdraw Requests</b>
+        <i class="fa-solid fa-rotate" onclick="location.reload()"></i>
+    </div>
+
+    <div class="container" id="requestList">
+        <div id="loading-ui">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 10px;">Loading data...</p>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc, increment, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.copyNum = (num) => {
+        navigator.clipboard.writeText(num).then(() => {
+            alert("Number copied: " + num);
+        });
+    };
+
+    // পেন্ডিং রিকোয়েস্ট দেখার জন্য ক্যোয়ারী
+    const q = query(collection(db, "withdraw_requests"), where("status", "==", "submitted"));
+
+    onSnapshot(q, async (snapshot) => {
+        const container = document.getElementById('requestList');
+        container.innerHTML = "";
+
+        if (snapshot.empty) {
+            container.innerHTML = '<p style="text-align:center; margin-top:50px; color:#999;">No pending requests found!</p>';
+            return;
+        }
+
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            
+            let userName = "Loading...";
+            let userEmail = "No Email Found";
+            let userPhone = "N/A";
+            
+            const userRef = doc(db, "users", data.userId);
+            const userDoc = await getDoc(userRef);
+            
+            if(userDoc.exists()){
+                const userData = userDoc.data();
+                userName = userData.name || "No Name Set";
+                userEmail = userData.email || "No Email Found";
+                userPhone = userData.phone || "N/A";
+            } else {
+                userName = "Deleted User";
+            }
+
+            const time = data.submittedAt ? data.submittedAt.toDate().toLocaleString('en-BD') : "Just now";
+
+            const card = `
+                <div class="withdraw-card">
+                    <div class="card-top">
+                        <span class="amount">৳${data.amount}</span>
+                        <span class="method-tag">${data.method}</span>
+                    </div>
+                    
+                    <div class="user-info">
+                        <div class="info-item"><i class="fa-solid fa-circle-user"></i> <b>Name:</b> <span style="color:var(--primary); font-weight:bold;">${userName}</span></div>
+                        <div class="info-item"><i class="fa-solid fa-envelope"></i> <b>Email:</b> ${userEmail}</div>
+                        <div class="info-item"><i class="fa-solid fa-phone"></i> <b>Phone:</b> ${userPhone}</div>
+                        <div class="info-item"><i class="fa-regular fa-clock"></i> <b>Time:</b> ${time}</div>
+                    </div>
+
+                    <div class="number-box">
+                        <span class="target-number">${data.accountNumber}</span>
+                        <button class="copy-btn" onclick="copyNum('${data.accountNumber}')">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-reject" onclick="processWithdraw('${id}', '${data.userId}', ${data.amount}, 'rejected')">Reject</button>
+                        <button class="btn btn-approve" onclick="processWithdraw('${id}', '${data.userId}', ${data.amount}, 'approved')">Approve</button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', card);
+        }
+    });
+
+    // প্রসেস ফাংশন (Approve/Reject)
+    window.processWithdraw = async (reqId, userId, amount, action) => {
+        if (!confirm(`Are you sure you want to ${action}?`)) return;
+
+        try {
+            if (action === 'rejected') {
+                // রিজেক্ট করলে টাকা রিফান্ড হবে এবং 'processedAt' সেভ হবে যাতে হিস্টোরিতে পাওয়া যায়
+                await runTransaction(db, async (tx) => {
+                    tx.update(doc(db, "users", userId), { balance: increment(amount) });
+                    tx.update(doc(db, "withdraw_requests", reqId), { 
+                        status: 'rejected',
+                        processedAt: serverTimestamp() 
+                    });
+                });
+                alert("Rejected & Refunded!");
+            } else {
+                // অ্যাপ্রুভ করলে স্ট্যাটাস 'success' হবে (হিস্টোরি পেজের সাথে মিল রেখে)
+                await updateDoc(doc(db, "withdraw_requests", reqId), { 
+                    status: 'success', 
+                    processedAt: serverTimestamp() 
+                });
+                alert("Approved Successfully!");
+            }
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    };
+</script>
+</body>
+</html>

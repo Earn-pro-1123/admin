@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Home Notice Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #00c853;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+
+        /* Top Header */
+        .top-bar {
+            width: 100%;
+            background: var(--primary-color);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none; color: white; width: 38px; height: 38px;
+            border-radius: 12px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: 0.3s; margin-right: 15px;
+        }
+
+        .back-btn:active { transform: scale(0.9); }
+        .top-bar b { font-size: 19px; letter-spacing: 0.5px; }
+
+        /* Main Content */
+        .container { width: 90%; max-width: 450px; margin-top: 30px; }
+
+        .notice-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .icon-box {
+            width: 65px; height: 65px; background: #e8f5e9;
+            color: var(--primary-color); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin: 0 auto 20px;
+        }
+
+        h2 { font-size: 20px; margin-bottom: 10px; color: #333; }
+        p { font-size: 13px; color: #666; margin-bottom: 20px; }
+
+        textarea {
+            width: 100%; height: 150px; padding: 15px;
+            border-radius: 15px; border: 2px solid #edf2f7;
+            background: #f8fafc; font-size: 15px; color: #444;
+            outline: none; transition: 0.3s; resize: none;
+            margin-bottom: 20px; line-height: 1.5;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 200, 83, 0.1);
+        }
+
+        .btn-update {
+            width: 100%; background: var(--primary-color);
+            color: white; border: none; padding: 16px;
+            border-radius: 15px; font-size: 16px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 6px 15px rgba(0, 200, 83, 0.3);
+            transition: 0.3s; display: flex; align-items: center;
+            justify-content: center; gap: 10px;
+        }
+
+        .btn-update:active { transform: translateY(2px); box-shadow: none; }
+        .btn-update:disabled { background: #ccc; box-shadow: none; }
+
+        .delete-btn {
+            margin-top: 15px; background: none; border: none;
+            color: #ff4444; font-size: 14px; font-weight: 600;
+            cursor: pointer; text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="back-btn" onclick="window.location.href='profile-dashboard .html'">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <b>Notice Settings</b>
+    </div>
+
+    <div class="container">
+        <div class="notice-card">
+            <div class="icon-box">
+                <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <h2>Home Pop-up Notice</h2>
+            <p>এখানে যা লিখবেন তা ইউজারের হোম পেজে পপ-আপ হিসেবে শো করবে।</p>
+            
+            <textarea id="noticeInput" placeholder="এখানে নোটিশ লিখুন..."></textarea>
+
+            <button class="btn-update" id="saveBtn">
+                <i class="fa-solid fa-paper-plane"></i> Publish Notice
+            </button>
+
+            <button class="delete-btn" id="clearBtn">Clear/Hide Notice</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+            authDomain: "test-54fa2.firebaseapp.com",
+            projectId: "test-54fa2",
+            appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const noticeInput = document.getElementById('noticeInput');
+        const saveBtn = document.getElementById('saveBtn');
+
+        // ১. আগের নোটিশ লোড করা (আপনার Home.html এর পাথ অনুযায়ী)
+        async function loadNotice() {
+            try {
+                const snap = await getDoc(doc(db, "settings", "app_config"));
+                if (snap.exists() && snap.data().home_notice) {
+                    noticeInput.value = snap.data().home_notice;
+                }
+            } catch (e) { console.error(e); }
+        }
+        loadNotice();
+
+        // ২. নোটিশ পাবলিশ করা
+        saveBtn.onclick = async () => {
+            const text = noticeInput.value.trim();
+            if(!text) return alert("Please write something first!");
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publishing...';
+
+            try {
+                // সরাসরি settings/app_config এ home_notice ফিল্ডে সেভ হবে
+                await setDoc(doc(db, "settings", "app_config"), {
+                    home_notice: text
+                }, { merge: true });
+
+                alert("Notice Published Successfully!");
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publish Notice';
+            }
+        };
+
+        // ৩. নোটিশ মুছে ফেলা (যাতে পপ-আপ আর না আসে)
+        document.getElementById('clearBtn').onclick = async () => {
+            if(!confirm("Are you sure you want to hide the notice?")) return;
+            
+            try {
+                await updateDoc(doc(db, "settings", "app_config"), {
+                    home_notice: deleteField()
+                });
+                noticeInput.value = "";
+                alert("Notice Cleared!");
+            } catch (e) { alert("Error: " + e.message); }
+        };
+    </script>
+</body>
+</html>

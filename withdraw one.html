@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Dashboard - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #00a651; --accent: #ff9900; --bg: #f4f7f6; --danger: #e74c3c; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body { background: var(--bg); color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        .top-section { flex-shrink: 0; background: var(--bg); }
+
+        .header {
+            background: var(--primary); color: white; padding: 20px 15px 30px 15px;
+            text-align: center; border-radius: 0 0 30px 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative;
+        }
+
+        .back-btn-top { position: absolute; left: 20px; top: 25px; color: white; font-size: 20px; text-decoration: none; }
+
+        .header h2 { font-size: 22px; }
+        .header p { font-size: 12px; opacity: 0.9; }
+
+        .scrollable-content {
+            flex-grow: 1; overflow-y: auto; 
+            padding: 10px 20px 40px 20px; max-width: 500px;
+            margin: 0 auto; width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section-title { font-size: 12px; font-weight: bold; color: #888; margin: 15px 0 10px 5px; text-transform: uppercase; }
+
+        .menu-list { display: grid; gap: 12px; }
+        .menu-item {
+            background: white; padding: 16px; border-radius: 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            text-decoration: none; color: #333; font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f0f0f0;
+        }
+
+        .menu-left { display: flex; align-items: center; gap: 12px; }
+        .menu-left i { 
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+
+        /* Status Switch Style */
+        .status-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff3f3; padding: 15px; border-radius: 18px; border: 1px dashed var(--danger);
+            margin-bottom: 15px;
+        }
+        .switch {
+            position: relative; display: inline-block; width: 45px; height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(21px); }
+
+        /* Colors */
+        .bg-withdraw { background: #ffebee; color: var(--danger); }
+        .bg-gift { background: #fff3e0; color: #ff9800; }
+        .bg-user { background: #e3f2fd; color: #2196f3; }
+        .bg-pkg { background: #f3e5f5; color: #9c27b0; }
+    </style>
+</head>
+<body>
+
+    <div class="top-section">
+        <div class="header">
+            <a href="admin.html" class="back-btn-top"><i class="fa-solid fa-arrow-left"></i></a>
+            <h2>EarnMaster Admin</h2>
+            <p>App Management Dashboard</p>
+        </div>
+    </div>
+
+    <div class="scrollable-content">
+        
+        <div class="section-title">System Control</div>
+        <div class="status-toggle">
+            <div class="menu-left">
+                <i class="fa-solid fa-hand-holding-dollar bg-withdraw"></i>
+                <div>
+                    <span style="display:block; font-size:14px;">Withdrawal Status</span>
+                    <small id="statusText" style="color:red; font-size:11px;">Loading...</small>
+                </div>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="withdrawSwitch" onchange="toggleWithdraw()">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="section-title">Core Controls</div>
+        <div class="menu-list">
+            <a href="gift.html" class="menu-item">
+                <div class="menu-left"><i class="fa-solid fa-gift bg-gift"></i><span>Gift Cards</span></div>
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+            <a href="block.html" class="menu-item">
+                <div class="menu-left"><i class="fa-solid fa-user-gear bg-user"></i><span>User Control</span></div>
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+            <a href="pakage.html" class="menu-item">
+                <div class="menu-left"><i class="fa-solid fa-box-open bg-pkg"></i><span>Packages</span></div>
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+        </div>
+
+        <div class="section-title">App Settings</div>
+        <div class="menu-list">
+            <a href="app.html" class="menu-item">
+                <div class="menu-left"><i class="fa-solid fa-mobile bg-user"></i><span>App Update</span></div>
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+            <a href="security_settings.html" class="menu-item">
+                <div class="menu-left"><i class="fa-solid fa-shield bg-withdraw"></i><span>Security</span></div>
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Withdraw স্ট্যাটাস চেক করা
+    const statusRef = doc(db, "settings", "withdraw_config");
+    
+    onSnapshot(statusRef, (doc) => {
+        if (doc.exists()) {
+            const isEnabled = doc.data().enabled;
+            document.getElementById('withdrawSwitch').checked = isEnabled;
+            document.getElementById('statusText').innerText = isEnabled ? "Currently: OPEN" : "Currently: CLOSED";
+            document.getElementById('statusText').style.color = isEnabled ? "green" : "red";
+        }
+    });
+
+    // স্ট্যাটাস পরিবর্তন করা
+    window.toggleWithdraw = async () => {
+        const isChecked = document.getElementById('withdrawSwitch').checked;
+        try {
+            await setDoc(statusRef, { enabled: isChecked }, { merge: true });
+        } catch (e) {
+            alert("Error updating status!");
+        }
+    };
+</script>
+</body>
+</html>

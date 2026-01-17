@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #00a651; --danger: #d32f2f; --bg: #f4f7f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); padding: 20px; }
+
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* Search Box */
+        .search-card {
+            background: white; padding: 20px; border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+        .search-card h2 { font-size: 18px; margin-bottom: 15px; color: var(--primary); }
+        .input-box { position: relative; display: flex; gap: 10px; }
+        input { 
+            flex: 1; padding: 12px 15px; border: 2px solid #eee; 
+            border-radius: 12px; outline: none; font-size: 14px;
+        }
+        input:focus { border-color: var(--primary); }
+        .btn-search { 
+            background: var(--primary); color: white; border: none; 
+            padding: 0 20px; border-radius: 12px; cursor: pointer; 
+        }
+
+        /* Result Card */
+        .result-card {
+            background: white; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .user-header { 
+            background: var(--primary); color: white; padding: 20px; text-align: center;
+        }
+        .user-header i { font-size: 40px; margin-bottom: 10px; }
+        .user-info { padding: 20px; }
+        
+        .info-row { 
+            display: flex; justify-content: space-between; 
+            padding: 10px 0; border-bottom: 1px solid #f5f5f5;
+        }
+        .info-row span:first-child { color: #888; font-size: 13px; }
+        .info-row span:last-child { font-weight: 600; color: #333; }
+
+        /* Actions */
+        .actions { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { 
+            padding: 12px; border: none; border-radius: 10px; 
+            font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s;
+        }
+        .btn-edit { background: #e3f2fd; color: #1976d2; }
+        .btn-block { background: #ffebee; color: var(--danger); }
+        .btn:active { transform: scale(0.95); }
+
+        .no-result { text-align: center; color: #888; padding: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="search-card">
+        <h2><i class="fa-solid fa-magnifying-glass"></i> Search User</h2>
+        <div class="input-box">
+            <input type="text" id="searchInput" placeholder="Phone Number or Email...">
+            <button class="btn-search" onclick="searchUser()"><i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <div id="userResult" class="result-card">
+        <div class="user-header">
+            <i class="fa-solid fa-circle-user"></i>
+            <h3 id="resName">User Name</h3>
+            <p id="resEmail" style="font-size: 12px; opacity: 0.8;">user@email.com</p>
+        </div>
+        
+        <div class="user-info">
+            <div class="info-row"><span>Phone Number</span><span id="resPhone">017xxx</span></div>
+            <div class="info-row"><span>Total Balance</span><span id="resBalance" style="color: var(--primary);">৳0.00</span></div>
+            <div class="info-row"><span>Account Status</span><span id="resStatus">Active</span></div>
+            <div class="info-row"><span>Join Date</span><span id="resDate">-</span></div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-edit" onclick="updateBalance()">Update Balance</button>
+            <button class="btn btn-block" onclick="toggleBlock()">Block / Unblock</button>
+        </div>
+    </div>
+
+    <div id="noResult" class="no-result">No user found with this info!</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentUserId = null;
+
+    window.searchUser = async () => {
+        const input = document.getElementById('searchInput').value.trim();
+        const resCard = document.getElementById('userResult');
+        const noRes = document.getElementById('noResult');
+        
+        if(!input) return alert("Enter phone or email!");
+
+        resCard.style.display = "none";
+        noRes.style.display = "none";
+
+        try {
+            const userRef = collection(db, "users");
+            // ফোন অথবা ইমেইল যেকোনো একটি দিয়ে সার্চ করার লজিক
+            let q = query(userRef, where("phone", "==", input));
+            let snap = await getDocs(q);
+
+            if(snap.empty) {
+                q = query(userRef, where("email", "==", input));
+                snap = await getDocs(q);
+            }
+
+            if(!snap.empty) {
+                const userData = snap.docs[0].data();
+                currentUserId = snap.docs[0].id;
+
+                document.getElementById('resName').innerText = userData.name || "N/A";
+                document.getElementById('resEmail').innerText = userData.email || "N/A";
+                document.getElementById('resPhone').innerText = userData.phone || "N/A";
+                document.getElementById('resBalance').innerText = "৳" + (userData.balance || 0);
+                document.getElementById('resStatus').innerText = userData.status || "Active";
+                document.getElementById('resDate').innerText = userData.joinedAt || "N/A";
+                
+                resCard.style.display = "block";
+            } else {
+                noRes.style.display = "block";
+            }
+        } catch(e) { alert("Error: " + e.message); }
+    };
+
+    // ব্যালেন্স আপডেট করার অপশন
+    window.updateBalance = async () => {
+        const newBal = prompt("Enter new balance amount:");
+        if(newBal !== null) {
+            await updateDoc(doc(db, "users", currentUserId), { balance: Number(newBal) });
+            alert("Balance updated!");
+            searchUser(); // রিফ্রেশ রেজাল্ট
+        }
+    };
+
+    // ব্লক বা আনব্লক করার অপশন
+    window.toggleBlock = async () => {
+        const currentStatus = document.getElementById('resStatus').innerText;
+        const nextStatus = currentStatus === "Blocked" ? "Active" : "Blocked";
+        
+        if(confirm(`Do you want to ${nextStatus} this user?`)) {
+            await updateDoc(doc(db, "users", currentUserId), { status: nextStatus });
+            alert("User status updated!");
+            searchUser();
+        }
+    };
+</script>
+</body>
+</html>

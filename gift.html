@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One-Time Gift Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #f0f2f5; display: flex; justify-content: center; padding: 20px;
+        }
+        .admin-box { 
+            width: 100%; max-width: 400px; background: white; 
+            border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden;
+        }
+        .header { background: #00a651; color: white; padding: 25px; text-align: center; }
+        .header h2 { font-size: 20px; letter-spacing: 1px; margin-top: 10px; }
+        
+        .form-body { padding: 25px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 11px; font-weight: bold; color: #888; margin-bottom: 8px; letter-spacing: 0.5px; }
+        input { 
+            width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; 
+            font-size: 16px; outline: none; transition: 0.3s; font-weight: 600;
+        }
+        input:focus { border-color: #00a651; background: #f9fffb; }
+
+        .btn-generate { 
+            width: 100%; background: #00a651; color: white; border: none; padding: 16px; 
+            border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,166,81,0.3); transition: 0.3s;
+        }
+        .btn-generate:active { transform: scale(0.98); }
+
+        .status-list { padding: 20px; background: #fafafa; border-top: 1px solid #eee; }
+        .status-title { font-size: 13px; color: #555; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        .code-item { 
+            background: white; border: 1px solid #eee; padding: 12px 15px; 
+            border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .code-item b { color: #333; font-size: 15px; }
+        .code-item span { color: #00a651; font-weight: bold; font-size: 14px; }
+        .del-icon { color: #ff4d4d; cursor: pointer; padding: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-box">
+    <div class="header">
+        <i class="fas fa-user-shield" style="font-size: 40px;"></i>
+        <h2>GIFT ADMIN PANEL</h2>
+    </div>
+
+    <div class="form-body">
+        <div class="input-group">
+            <label>GIFT CODE</label>
+            <input type="text" id="giftCode" placeholder="E.G. RAMADAN50">
+        </div>
+        <div class="input-group">
+            <label>AMOUNT (৳)</label>
+            <input type="number" id="giftAmount" placeholder="E.G. 50">
+        </div>
+        <button class="btn-generate" onclick="createCode()">GENERATE ONE-TIME CODE</button>
+    </div>
+
+    <div class="status-list">
+        <div class="status-title"><i class="fas fa-bolt"></i> Active One-Time Codes:</div>
+        <div id="activeCodes"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // আপনার ফায়ারবেস কনফিগারেশন
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // কোড সেভ করার ফাংশন
+    window.createCode = async () => {
+        const codeInput = document.getElementById('giftCode');
+        const amountInput = document.getElementById('giftAmount');
+        const code = codeInput.value.trim().toUpperCase();
+        const amount = parseFloat(amountInput.value);
+
+        if(!code || isNaN(amount)) {
+            alert("সবগুলো ঘর সঠিকভাবে পূরণ করুন!");
+            return;
+        }
+
+        try {
+            // gift.html এর লজিক অনুযায়ী 'one_time' টাইপ সেট করা হচ্ছে
+            await setDoc(doc(db, "gift_codes", code), {
+                type: 'one_time',
+                amount: amount, 
+                createdAt: new Date()
+            });
+            
+            alert("সফলভাবে কোডটি তৈরি হয়েছে!");
+            codeInput.value = "";
+            amountInput.value = "";
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    };
+
+    // লাইভ লিস্ট আপডেট দেখানো
+    onSnapshot(collection(db, "gift_codes"), (snap) => {
+        const container = document.getElementById('activeCodes');
+        container.innerHTML = "";
+        
+        snap.forEach(d => {
+            const data = d.data();
+            if(data.type === 'one_time') {
+                container.innerHTML += `
+                <div class="code-item">
+                    <div>
+                        <b>${d.id}</b><br>
+                        <span>৳${data.amount || 0}</span>
+                    </div>
+                    <i class="fas fa-trash-alt del-icon" onclick="deleteCode('${d.id}')"></i>
+                </div>`;
+            }
+        });
+
+        if(container.innerHTML === "") {
+            container.innerHTML = "<p style='text-align:center; font-size:12px; color:#aaa;'>No active codes available</p>";
+        }
+    });
+
+    // কোড ডিলিট করার ফাংশন
+    window.deleteCode = async (id) => {
+        if(confirm("আপনি কি নিশ্চিত যে কোডটি ডিলিট করতে চান?")) {
+            await deleteDoc(doc(db, "gift_codes", id));
+        }
+    };
+</script>
+
+</body>
+</html>

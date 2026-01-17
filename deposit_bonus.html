@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Commission Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #00a651;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .top-bar {
+            width: 100%;
+            background: var(--primary-color);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-right: 15px;
+        }
+
+        .back-btn:active { transform: scale(0.9); }
+
+        .top-bar b { font-size: 19px; letter-spacing: 0.5px; }
+
+        /* Main Content */
+        .container {
+            width: 90%;
+            max-width: 450px;
+            margin-top: 40px;
+        }
+
+        .settings-card {
+            background: var(--card-bg);
+            padding: 30px 25px;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            background: #e8f5e9;
+            color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 20px;
+        }
+
+        .settings-card h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #2d3436;
+        }
+
+        .settings-card p {
+            font-size: 14px;
+            color: #636e72;
+            margin-bottom: 25px;
+        }
+
+        .input-box {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-box input {
+            width: 100%;
+            padding: 15px 20px;
+            padding-right: 50px;
+            border-radius: 15px;
+            border: 2px solid #edf2f7;
+            background: #f8fafc;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            outline: none;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .input-box input:focus {
+            border-color: var(--primary-color);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.1);
+        }
+
+        .percent-tag {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #b2bec3;
+            font-size: 18px;
+        }
+
+        .btn-update {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0, 166, 81, 0.3);
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-update:hover { background: #008e45; }
+        .btn-update:active { transform: translateY(2px); box-shadow: none; }
+
+        /* Notification Styling */
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-bg { display: block !important; background: #dcfce7; color: #166534; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="back-btn" onclick="window.location.href='deposit-dashboard.html'">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <b>Settings</b>
+    </div>
+
+    <div class="container">
+        <div class="settings-card">
+            <div class="icon-circle">
+                <i class="fa-solid fa-percent"></i>
+            </div>
+            <h2>Set Commission</h2>
+            <p>ডিপোজিটের ওপর রেফারার কত % বোনাস পাবে তা এখানে সেট করুন।</p>
+            
+            <div class="input-box">
+                <input type="number" id="commRate" placeholder="00" min="0" max="100">
+                <span class="percent-tag">%</span>
+            </div>
+
+            <button class="btn-update" id="saveBtn">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Update Settings
+            </button>
+
+            <div id="status">Updated successfully!</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+            authDomain: "test-54fa2.firebaseapp.com",
+            projectId: "test-54fa2",
+            appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // কমিশন লোড করা
+        async function loadRate() {
+            try {
+                const snap = await getDoc(doc(db, "settings", "commissions"));
+                if (snap.exists()) {
+                    document.getElementById('commRate').value = snap.data().depositComm;
+                }
+            } catch (e) { console.error(e); }
+        }
+        loadRate();
+
+        // কমিশন সেভ করা
+        document.getElementById('saveBtn').onclick = async () => {
+            const rate = document.getElementById('commRate').value;
+            const status = document.getElementById('status');
+            const btn = document.getElementById('saveBtn');
+
+            if(rate === "") return alert("Please enter a value!");
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+
+            try {
+                await setDoc(doc(db, "settings", "commissions"), {
+                    depositComm: Number(rate)
+                }, { merge: true });
+
+                status.className = "success-bg";
+                setTimeout(() => { status.className = ""; }, 3000);
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Update Settings';
+            }
+        };
+    </script>
+</body>
+</html>

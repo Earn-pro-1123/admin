@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>User Management - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f4f7f6; color: #333; }
+
+        /* Header */
+        .header-section {
+            background: #00a651; color: white; padding: 15px;
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .header-info { display: flex; align-items: center; gap: 15px; }
+        .header-top i { cursor: pointer; font-size: 20px; padding: 5px; }
+        
+        /* Total User Badge */
+        .user-count-badge {
+            background: rgba(255,255,255,0.2); padding: 5px 12px;
+            border-radius: 20px; font-size: 12px; font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+
+        /* Search Box */
+        .search-box {
+            background: rgba(255,255,255,0.2); border-radius: 12px;
+            display: flex; align-items: center; padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .search-box input {
+            background: none; border: none; color: white; width: 100%;
+            outline: none; margin-left: 10px; font-size: 14px;
+        }
+        .search-box input::placeholder { color: rgba(255,255,255,0.7); }
+
+        /* User Cards */
+        .container { padding: 15px; }
+        .user-card {
+            background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex;
+            flex-direction: column; gap: 12px;
+            border-left: 5px solid #00a651;
+            transition: 0.3s;
+        }
+        .user-card.blocked { border-left: 5px solid #e74c3c; opacity: 0.8; }
+        
+        .user-info h4 { font-size: 17px; color: #00a651; margin-bottom: 5px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px;}
+        .info-grid { display: grid; grid-template-columns: 1fr; gap: 5px; }
+        .info-item { font-size: 13px; color: #555; display: flex; align-items: center; gap: 8px; }
+        .info-item i { color: #888; width: 15px; }
+        .info-item b { color: #333; }
+        
+        .status-tag { font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 5px; display: inline-block; }
+        .tag-active { background: #e8f5e9; color: #2e7d32; }
+        .tag-blocked { background: #feebeb; color: #c62828; }
+
+        /* Action Buttons */
+        .btn-action { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+        .btn { border: none; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; flex: 1; }
+        .btn-block { background: #feebeb; color: #e74c3c; }
+        .btn-unblock { background: #e8f5e9; color: #00a651; }
+        .btn-delete { background: #333; color: #fff; }
+
+        #loading { text-align: center; margin-top: 50px; color: #00a651; }
+    </style>
+</head>
+<body>
+
+<div class="header-section">
+    <div class="header-top">
+        <div class="header-info">
+            <i class="fa-solid fa-arrow-left" onclick="window.location.href='profile-dashboard .html'"></i>
+            <b>User Management</b>
+        </div>
+        <div class="user-count-badge">Total: <span id="totalCount">0</span></div>
+    </div>
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="ফোন নাম্বার দিয়ে খুঁজুন..." onkeyup="filterUsers()">
+    </div>
+</div>
+
+<div class="container" id="userList">
+    <div id="loading"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let allUsers = [];
+
+    const q = query(collection(db, "users"), orderBy("phone", "asc"));
+    onSnapshot(q, (snapshot) => {
+        document.getElementById('loading').style.display = 'none';
+        allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        document.getElementById('totalCount').innerText = allUsers.length;
+        renderUsers(allUsers);
+    });
+
+    function renderUsers(data) {
+        const list = document.getElementById('userList');
+        list.innerHTML = "";
+        
+        if (data.length === 0) {
+            list.innerHTML = '<p style="text-align:center; margin-top:20px; color:#999;">কোনো ইউজার পাওয়া যায়নি।</p>';
+            return;
+        }
+
+        data.forEach(user => {
+            const isBlocked = user.status === "blocked";
+            const card = document.createElement('div');
+            card.className = `user-card ${isBlocked ? 'blocked' : ''}`;
+            card.innerHTML = `
+                <div class="user-info">
+                    <h4>${user.name || 'No Name'}</h4>
+                    <div class="info-grid">
+                        <div class="info-item"><i class="fa-solid fa-phone"></i> <b>Phone:</b> ${user.phone}</div>
+                        <div class="info-item"><i class="fa-solid fa-envelope"></i> <b>Email:</b> ${user.email || 'N/A'}</div>
+                        <div class="info-item"><i class="fa-solid fa-key"></i> <b>Password:</b> ${user.password || 'N/A'}</div>
+                        <div class="info-item"><i class="fa-solid fa-share-nodes"></i> <b>Refer Code:</b> ${user.referCode || 'N/A'}</div>
+                        <div class="info-item" style="margin-top:5px;">
+                            <span class="status-tag ${isBlocked ? 'tag-blocked' : 'tag-active'}">
+                                ${isBlocked ? 'BLOCKED' : 'ACTIVE'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-action">
+                    <button class="btn ${isBlocked ? 'btn-unblock' : 'btn-block'}" 
+                        onclick="toggleUserStatus('${user.id}', '${user.status || 'active'}')">
+                        ${isBlocked ? 'UNBLOCK' : 'BLOCK'}
+                    </button>
+                    <button class="btn btn-delete" onclick="deleteUser('${user.id}')">
+                        <i class="fa-solid fa-trash"></i> DELETE
+                    </button>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    // Auto Reload / Instant Update fix
+    window.toggleUserStatus = async (id, currentStatus) => {
+        try {
+            const newStatus = currentStatus === "blocked" ? "active" : "blocked";
+            const msg = newStatus === "blocked" ? "Block" : "Unblock";
+            
+            if(confirm(`Are you sure you want to ${msg} this user?`)) {
+                await updateDoc(doc(db, "users", id), { status: newStatus });
+                
+                // ম্যানুয়ালি লোকাল ডাটা আপডেট যাতে সাথে সাথে বাটন চেঞ্জ হয়
+                const userIndex = allUsers.findIndex(u => u.id === id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex].status = newStatus;
+                    renderUsers(allUsers);
+                }
+            }
+        } catch (error) {
+            alert("Update failed.");
+        }
+    };
+
+    window.deleteUser = async (id) => {
+        try {
+            if(confirm("আপনি কি নিশ্চিতভাবে এই ইউজারকে ডিলিট করতে চান?")) {
+                await deleteDoc(doc(db, "users", id));
+            }
+        } catch (error) {
+            alert("Delete failed.");
+        }
+    };
+
+    window.filterUsers = () => {
+        const term = document.getElementById('searchInput').value.trim().toLowerCase();
+        const filtered = allUsers.filter(u => u.phone && u.phone.includes(term));
+        renderUsers(filtered);
+        document.getElementById('totalCount').innerText = filtered.length;
+    };
+
+</script>
+</body>
+</html>

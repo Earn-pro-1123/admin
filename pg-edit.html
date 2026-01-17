@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Package</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f4f7fa; padding-bottom: 20px; }
+        .header { background: #fff; height: 55px; display: flex; align-items: center; padding: 0 15px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+        .back-btn { text-decoration: none; color: #333; font-size: 14px; font-weight: 600; background: #eee; padding: 6px 12px; border-radius: 6px; }
+        
+        .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        h2 { font-size: 18px; margin-bottom: 15px; color: #2196f3; }
+        
+        label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        
+        .update-btn { width: 100%; padding: 14px; background: #2196f3; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="pakage-list.html" class="back-btn">Back</a>
+    </div>
+    <div class="container">
+        <div class="card">
+            <h2>Edit Share Info</h2>
+            <label>Package Name</label>
+            <input type="text" id="name">
+            <label>Price (৳)</label>
+            <input type="number" id="price">
+            <label>Total Profit (৳)</label>
+            <input type="number" id="profit">
+            <label>Cycle (Days)</label>
+            <input type="number" id="cycle">
+            <label>Image URL</label>
+            <input type="text" id="img">
+            <button class="update-btn" onclick="updatePkg()">Update Package</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk", authDomain: "test-54fa2.firebaseapp.com", projectId: "test-54fa2", appId: "1:496937911936:web:5f48c8712f58f2e26fc865" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const pkgId = urlParams.get('id');
+
+        async function loadData() {
+            const snap = await getDoc(doc(db, "packages", pkgId));
+            if(snap.exists()) {
+                const data = snap.data();
+                document.getElementById('name').value = data.name;
+                document.getElementById('price').value = data.price;
+                document.getElementById('profit').value = data.profit;
+                document.getElementById('cycle').value = data.cycle;
+                document.getElementById('img').value = data.image;
+            }
+        }
+
+        window.updatePkg = async () => {
+            try {
+                await updateDoc(doc(db, "packages", pkgId), {
+                    name: document.getElementById('name').value,
+                    price: parseFloat(document.getElementById('price').value),
+                    profit: parseFloat(document.getElementById('profit').value),
+                    cycle: parseInt(document.getElementById('cycle').value),
+                    image: document.getElementById('img').value
+                });
+                alert("Updated!");
+                window.location.href = "package-list.html";
+            } catch(e) { alert(e.message); }
+        };
+        loadData();
+    </script>
+</body>
+</html>

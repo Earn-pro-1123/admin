@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Control - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        
+        .admin-card { 
+            width: 100%; max-width: 400px; 
+            background: white; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; 
+        }
+
+        .header { 
+            background: #d32f2f; color: white; 
+            padding: 20px; text-align: center; 
+            font-size: 18px; font-weight: bold; 
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        .content { padding: 25px; }
+
+        .input-group { margin-bottom: 20px; }
+        label { 
+            display: block; font-size: 12px; font-weight: bold; 
+            color: #555; margin-bottom: 8px; text-transform: uppercase; 
+        }
+
+        .input-wrapper { position: relative; }
+        .input-wrapper i { 
+            position: absolute; left: 15px; top: 50%; 
+            transform: translateY(-50%); color: #d32f2f; 
+        }
+
+        input { 
+            width: 100%; padding: 12px 12px 12px 45px; 
+            border: 2px solid #eee; border-radius: 12px; 
+            outline: none; transition: 0.3s; font-size: 15px;
+        }
+
+        input:focus { border-color: #d32f2f; background: #fffcfc; }
+
+        .hint { font-size: 11px; color: #888; margin-top: 5px; }
+
+        .btn-update { 
+            width: 100%; background: #d32f2f; color: white; 
+            border: none; padding: 15px; border-radius: 12px; 
+            font-size: 16px; font-weight: bold; cursor: pointer; 
+            transition: 0.3s; box-shadow: 0 5px 15px rgba(211,47,47,0.2); 
+        }
+
+        .btn-update:active { transform: scale(0.98); }
+
+        #status-msg { 
+            text-align: center; margin-top: 15px; 
+            font-size: 14px; font-weight: 500; display: none; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <div class="header">
+        <i class="fa-solid fa-shield-halved"></i>
+        Master Security Control
+    </div>
+
+    <div class="content">
+        <div class="input-group">
+            <label>Session Timeout (Milliseconds)</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-clock"></i>
+                <input type="number" id="totalMs" placeholder="e.g. 1800000">
+            </div>
+            <p class="hint">1800000 = 30 Minutes, 3600000 = 1 Hour</p>
+        </div>
+
+        <div class="input-group">
+            <label>Logout Alert Message</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-comment-dots"></i>
+                <input type="text" id="alertMsg" placeholder="Enter alert message...">
+            </div>
+            <p class="hint">This message will show when user is logged out.</p>
+        </div>
+
+        <button class="btn-update" onclick="updateSecurity()">
+            <i class="fa-solid fa-rotate"></i> UPDATE SECURITY
+        </button>
+
+        <div id="status-msg"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // বর্তমান সেটিংস লোড করা
+    async function loadCurrentSecurity() {
+        const docRef = doc(db, "settings", "appConfig");
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+            const data = snap.data();
+            document.getElementById('totalMs').value = data.totalMs || "";
+            document.getElementById('alertMsg').value = data.alertMsg || "";
+        }
+    }
+    loadCurrentSecurity();
+
+    // সেটিংস আপডেট করা
+    window.updateSecurity = async () => {
+        const ms = parseInt(document.getElementById('totalMs').value);
+        const msg = document.getElementById('alertMsg').value.trim();
+        const status = document.getElementById('status-msg');
+
+        if (!ms || !msg) {
+            alert("Please fill all fields!");
+            return;
+        }
+
+        status.style.display = "block";
+        status.style.color = "#666";
+        status.innerText = "Processing...";
+
+        try {
+            await setDoc(doc(db, "settings", "appConfig"), {
+                totalMs: ms,
+                alertMsg: msg
+            }, { merge: true });
+
+            status.innerText = "✅ Security settings updated!";
+            status.style.color = "green";
+            setTimeout(() => { status.style.display = "none"; }, 3000);
+        } catch (e) {
+            status.innerText = "❌ Error: " + e.message;
+            status.style.color = "red";
+        }
+    };
+</script>
+
+</body>
+</html>

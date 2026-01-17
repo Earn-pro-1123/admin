@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Link Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .admin-card { width: 100%; max-width: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: #00a651; color: white; padding: 20px; text-align: center; font-size: 18px; font-weight: bold; }
+        .form { padding: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #00a651; }
+        .btn-save { width: 100%; background: #00a651; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #status { text-align: center; margin-top: 10px; font-size: 13px; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <div class="header">DOWNLOAD PAGE SETTINGS</div>
+    <div class="form">
+        <div class="input-group">
+            <label>APK DOWNLOAD LINK</label>
+            <input type="text" id="apk_link" placeholder="Direct download link...">
+        </div>
+
+        <div class="input-group">
+            <label>VERSION & SIZE (E.G. v1.0.2 • 12.5 MB)</label>
+            <input type="text" id="app_version" placeholder="v1.0.2 • 12.5 MB">
+        </div>
+
+        <button class="btn-save" onclick="updateAppData()">SAVE DOWNLOAD INFO</button>
+        <div id="status"></div>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+    authDomain: "test-54fa2.firebaseapp.com",
+    projectId: "test-54fa2",
+    appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ডাটাবেজ থেকে বর্তমান তথ্য আনা
+  async function loadData() {
+    const docSnap = await getDoc(doc(db, "settings", "links"));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      document.getElementById('apk_link').value = data.apk_link || "";
+      document.getElementById('app_version').value = data.app_version || "";
+    }
+  }
+  loadData();
+
+  // ডাটা আপডেট করা
+  window.updateAppData = async () => {
+    const apk = document.getElementById('apk_link').value.trim();
+    const ver = document.getElementById('app_version').value.trim();
+    const status = document.getElementById('status');
+
+    status.style.display = "block";
+    status.innerText = "Saving...";
+
+    try {
+      await setDoc(doc(db, "settings", "links"), {
+        apk_link: apk,
+        app_version: ver
+      }, { merge: true });
+
+      status.innerText = "✅ Download Settings Updated!";
+      status.style.color = "green";
+    } catch (e) {
+      status.innerText = "❌ Error: " + e.message;
+      status.style.color = "red";
+    }
+  };
+</script>
+
+</body>
+</html>

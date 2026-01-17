@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Center Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .admin-card { width: 100%; max-width: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: #00a651; color: white; padding: 20px; text-align: center; font-size: 20px; font-weight: bold; }
+        .form { padding: 25px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 11px; font-weight: bold; color: #888; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #00a651; }
+        input { width: 100%; padding: 14px 14px 14px 45px; border: 2px solid #eee; border-radius: 12px; outline: none; transition: 0.3s; font-size: 15px; }
+        input:focus { border-color: #00a651; background: #f9fffb; }
+        .btn-save { width: 100%; background: #00a651; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,166,81,0.2); }
+        .btn-save:active { transform: scale(0.98); }
+        #msg { text-align: center; margin-top: 15px; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <div class="header">Manage Support Links</div>
+    <div class="form">
+        <div class="input-group">
+            <label>TELEGRAM SUPPORT LINK</label>
+            <div class="input-wrapper">
+                <i class="fa-brands fa-telegram"></i>
+                <input type="text" id="support_tg" placeholder="https://t.me/your_support">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>WHATSAPP NUMBER (Without +)</label>
+            <div class="input-wrapper">
+                <i class="fa-brands fa-whatsapp"></i>
+                <input type="text" id="support_wa" placeholder="8801700000000">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>SUPPORT EMAIL</label>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="support_email" placeholder="support@yourdomain.com">
+            </div>
+        </div>
+
+        <button class="btn-save" onclick="saveSupportData()">UPDATE SUPPORT CENTER</button>
+        <div id="msg"></div>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+    authDomain: "test-54fa2.firebaseapp.com",
+    projectId: "test-54fa2",
+    appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ১. বর্তমান সাপোর্ট ডাটা লোড করা
+  async function loadSupportData() {
+    const docSnap = await getDoc(doc(db, "settings", "links"));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      document.getElementById('support_tg').value = data.support_tg || "";
+      document.getElementById('support_wa').value = data.support_wa || "";
+      document.getElementById('support_email').value = data.support_email || "";
+    }
+  }
+  loadSupportData();
+
+  // ২. ডাটা সেভ করা
+  window.saveSupportData = async () => {
+    const tg = document.getElementById('support_tg').value.trim();
+    const wa = document.getElementById('support_wa').value.trim();
+    const email = document.getElementById('support_email').value.trim();
+    const msg = document.getElementById('msg');
+
+    msg.style.display = "block";
+    msg.style.color = "#666";
+    msg.innerText = "Processing...";
+
+    try {
+      await setDoc(doc(db, "settings", "links"), {
+        support_tg: tg,
+        support_wa: wa,
+        support_email: email
+      }, { merge: true });
+
+      msg.innerText = "✅ Support Center Updated!";
+      msg.style.color = "green";
+      setTimeout(() => { msg.style.display = "none"; }, 3000);
+    } catch (e) {
+      msg.innerText = "❌ Error: " + e.message;
+      msg.style.color = "red";
+    }
+  };
+</script>
+
+</body>
+</html>

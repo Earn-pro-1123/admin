@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notice Management | Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* মোবাইল ফ্রেন্ডলি বেসিক সেটআপ */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; color: #333; }
+
+        /* হেডার ডিজাইন */
+        .header {
+            background: #ffffff;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .back-btn {
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #eee;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .back-btn:active { transform: scale(0.95); }
+        .header-title { margin-left: auto; font-size: 16px; font-weight: bold; color: #00c853; }
+
+        /* মেইন কন্টেন্ট */
+        .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-top: 10px;
+        }
+        h2 { font-size: 18px; margin-bottom: 20px; text-align: center; color: #444; }
+
+        /* অন/অফ সুইচ স্টাইল */
+        .status-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .status-text { font-weight: 600; font-size: 15px; }
+        
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #00c853; }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* ইনপুট ও বাটন */
+        label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #666; }
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 14px;
+            resize: none;
+            box-sizing: border-box;
+            margin-bottom: 25px;
+            outline: none;
+            transition: 0.3s;
+        }
+        textarea:focus { border-color: #00c853; box-shadow: 0 0 5px rgba(0,200,83,0.2); }
+
+        .save-btn {
+            width: 100%;
+            padding: 15px;
+            background: #00c853;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,200,83,0.3);
+            transition: 0.3s;
+        }
+        .save-btn:active { transform: scale(0.97); }
+
+        /* সাকসেস মেসেজ অ্যানিমেশন */
+        #toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #333; color: #fff; padding: 10px 20px; border-radius: 30px;
+            font-size: 14px; display: none; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="admin.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <div class="header-title">Notice Panel</div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Manage Home Notice</h2>
+
+            <div class="status-wrapper">
+                <span class="status-text">Notice Visibility</span>
+                <label class="switch">
+                    <input type="checkbox" id="notice-status">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <label>Notice Message</label>
+            <textarea id="notice-input" rows="6" placeholder="Type your important news here..."></textarea>
+
+            <button class="save-btn" onclick="saveNotice()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </div>
+
+    <div id="toast">Settings Updated!</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+            authDomain: "test-54fa2.firebaseapp.com",
+            projectId: "test-54fa2",
+            appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ডাটাবেস থেকে বর্তমান সেটিংস লোড করা
+        async function loadCurrentSettings() {
+            try {
+                const docRef = doc(db, "settings", "app_config");
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('notice-input').value = data.home_notice || "";
+                    document.getElementById('notice-status').checked = data.show_notice === true;
+                }
+            } catch (e) {
+                console.error("Load Error:", e);
+            }
+        }
+
+        // ডাটাবেসে নতুন সেটিংস সেভ করা
+        window.saveNotice = async () => {
+            const btn = document.querySelector('.save-btn');
+            const msg = document.getElementById('notice-input').value;
+            const status = document.getElementById('notice-status').checked;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                await setDoc(doc(db, "settings", "app_config"), {
+                    home_notice: msg,
+                    show_notice: status
+                }, { merge: true });
+
+                showToast("Notice Updated Successfully!");
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            }
+        };
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.innerText = text;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }
+
+        loadCurrentSettings();
+    </script>
+</body>
+</html>

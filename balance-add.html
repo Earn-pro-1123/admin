@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Balance Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f4f7fa; color: #333; }
+
+        /* Header */
+        .header {
+            background: #fff; height: 55px; display: flex; align-items: center;
+            padding: 0 15px; box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .back-btn {
+            text-decoration: none; color: #333; font-size: 14px; font-weight: 600;
+            background: #eee; padding: 6px 12px; border-radius: 8px;
+        }
+        .header-title { margin-left: auto; font-size: 15px; font-weight: bold; color: #00c853; }
+
+        /* Container */
+        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
+        .card { 
+            background: #fff; padding: 20px; border-radius: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+
+        /* Search Section */
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input {
+            flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px;
+            font-size: 14px; outline: none;
+        }
+        .btn-search {
+            padding: 0 15px; background: #2196f3; color: white;
+            border: none; border-radius: 10px; cursor: pointer;
+        }
+
+        /* User Info Section */
+        #user-info { display: none; text-align: center; }
+        .user-name { font-size: 18px; font-weight: bold; color: #222; }
+        .user-balance { font-size: 24px; color: #00c853; margin: 10px 0; font-weight: bold; }
+        
+        /* Action Buttons */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn-action {
+            padding: 15px; border: none; border-radius: 12px;
+            font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.3s;
+        }
+        .btn-add { background: #e8f5e9; color: #2e7d32; }
+        .btn-minus { background: #ffebee; color: #c62828; }
+        .btn-action:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="admin.html" class="back-btn">Back</a>
+        <div class="header-title">User Balance</div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="search-box">
+                <input type="number" id="search-phone" placeholder="Enter User Phone Number">
+                <button class="btn-search" onclick="searchUser()"><i class="fas fa-search"></i></button>
+            </div>
+
+            <div id="user-info">
+                <div class="user-name" id="display-name">User Name</div>
+                <div style="font-size: 12px; color: #777;">Current Balance</div>
+                <div class="user-balance">৳ <span id="display-balance">0.00</span></div>
+
+                <input type="number" id="amount-input" placeholder="Enter Amount (৳)" style="width: 100%; text-align: center; margin-top: 10px;">
+
+                <div class="action-grid">
+                    <button class="btn-action btn-add" onclick="updateBalance('add')">
+                        <i class="fas fa-plus-circle"></i> ADD MONEY
+                    </button>
+                    <button class="btn-action btn-minus" onclick="updateBalance('minus')">
+                        <i class="fas fa-minus-circle"></i> MINUS MONEY
+                    </button>
+                </div>
+            </div>
+            <div id="no-user" style="display:none; text-align:center; color:red; font-size:14px;">User not found!</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+            authDomain: "test-54fa2.firebaseapp.com",
+            projectId: "test-54fa2",
+            appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let targetUserId = null;
+
+        // User Search Function
+        window.searchUser = async () => {
+            const phone = document.getElementById('search-phone').value;
+            if(!phone) return alert("Enter phone number");
+
+            const q = query(collection(db, "users"), where("phone", "==", phone));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach((doc) => {
+                    targetUserId = doc.id;
+                    const data = doc.data();
+                    document.getElementById('display-name').innerText = data.name || "User";
+                    document.getElementById('display-balance').innerText = data.balance.toFixed(2);
+                    document.getElementById('user-info').style.display = 'block';
+                    document.getElementById('no-user').style.display = 'none';
+                });
+            } else {
+                document.getElementById('user-info').style.display = 'none';
+                document.getElementById('no-user').style.display = 'block';
+            }
+        };
+
+        // Balance Update Function (Add/Minus)
+        window.updateBalance = async (type) => {
+            const amount = parseFloat(document.getElementById('amount-input').value);
+            if(!amount || amount <= 0) return alert("Enter valid amount");
+
+            const finalAmount = type === 'add' ? amount : -amount;
+
+            try {
+                const userRef = doc(db, "users", targetUserId);
+                await updateDoc(userRef, {
+                    balance: increment(finalAmount)
+                });
+                alert(type === 'add' ? "Money Added!" : "Money Deducted!");
+                searchUser(); // Refresh data
+                document.getElementById('amount-input').value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        };
+    </script>
+</body>
+</html>

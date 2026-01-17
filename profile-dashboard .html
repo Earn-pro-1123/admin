@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Dashboard - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #00a651; --accent: #ff9900; --bg: #f4f7f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        
+        body { background: var(--bg); color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        .top-section { flex-shrink: 0; background: var(--bg); }
+
+        .header {
+            background: var(--primary); color: white; padding: 20px 15px 30px 15px;
+            text-align: center; border-radius: 0 0 30px 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .back-btn-top {
+            position: absolute; left: 20px; top: 25px;
+            color: white; font-size: 20px; cursor: pointer;
+            text-decoration: none; transition: 0.3s;
+        }
+        .back-btn-top:active { transform: scale(0.9); opacity: 0.8; }
+
+        .header h2 { font-size: 22px; letter-spacing: 1px; }
+        .header p { font-size: 12px; opacity: 0.9; margin-top: 5px; }
+
+        .stats-container { padding: 20px; max-width: 500px; margin: 0 auto; width: 100%; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .stat-card {
+            background: white; padding: 15px; border-radius: 20px;
+            text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            border-bottom: 4px solid var(--primary);
+        }
+        .stat-card i { font-size: 20px; color: var(--primary); margin-bottom: 5px; }
+        .stat-card h3 { font-size: 16px; color: #2d3436; }
+        .stat-card p { font-size: 10px; color: #999; text-transform: uppercase; }
+
+        .scrollable-content {
+            flex-grow: 1; overflow-y: auto; 
+            padding: 10px 20px 40px 20px; max-width: 500px;
+            margin: 0 auto; width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section-title { font-size: 12px; font-weight: bold; color: #888; margin: 15px 0 10px 5px; text-transform: uppercase; }
+
+        .menu-list { display: grid; gap: 12px; }
+        .menu-item {
+            background: white; padding: 16px; border-radius: 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            text-decoration: none; color: #333; font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            border: 1px solid #f0f0f0; transition: 0.2s;
+        }
+        .menu-item:active { background: #f9f9f9; transform: scale(0.98); }
+        
+        .menu-left { display: flex; align-items: center; gap: 12px; }
+        .menu-left i { 
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+
+        /* Colors */
+        .bg-gift { background: #fff3e0; color: #ff9800; }
+        .bg-user { background: #e3f2fd; color: #2196f3; }
+        .bg-pkg { background: #f3e5f5; color: #9c27b0; }
+        .bg-history { background: #e0f2f1; color: #00897b; }
+        .bg-note { background: #e8f5e9; color: #4caf50; }
+        .bg-service { background: #fffde7; color: #fbc02d; }
+        .bg-app { background: #fce4ec; color: #e91e63; } /* App Settings Color */
+        .bg-sec { background: #ffebee; color: #f44336; }
+    </style>
+</head>
+<body>
+
+    <div class="top-section">
+        <div class="header">
+            <a href="index.html" class="back-btn-top">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            
+            <h2>EarnMaster Admin</h2>
+            <p>App Management Dashboard</p>
+        </div>
+
+        <div class="stats-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fa-solid fa-users"></i>
+                    <h3 id="userCount">0</h3>
+                    <p>Total Users</p>
+                </div>
+                <div class="stat-card" style="border-bottom-color: var(--accent);">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <h3 id="pkgCount">0</h3>
+                    <p>Active Plans</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scrollable-content">
+        
+        <div class="section-title">Core Controls</div>
+        <div class="menu-list">
+            <a href="gift.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-gift bg-gift"></i>
+                    <span>Gift Cards Management</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="block.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-user-gear bg-user"></i>
+                    <span>User Data Control</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="pakage.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-box-open bg-pkg"></i>
+                    <span>Investment Packages</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="pakage_history.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-clock-rotate-left bg-history"></i>
+                    <span>Package History</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="note.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-note-sticky bg-note"></i>
+                    <span>System Notice/Note</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+        </div>
+
+        <div class="section-title">App Settings</div>
+        <div class="menu-list">
+            <a href="app.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-mobile-screen-button bg-app"></i>
+                    <span>App Update / APK</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="service.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-handshake-angle bg-service"></i>
+                    <span>Service Management</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="community_settings.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-share-nodes bg-user"></i>
+                    <span>Community Links</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+
+            <a href="security_settings.html" class="menu-item">
+                <div class="menu-left">
+                    <i class="fa-solid fa-shield-halved bg-sec"></i>
+                    <span>Session & Security</span>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#ddd;"></i>
+            </a>
+        </div>
+
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD-XRUDILxlkOQk4bbpkajLFaRmCVeMxEk",
+        authDomain: "test-54fa2.firebaseapp.com",
+        projectId: "test-54fa2",
+        appId: "1:496937911936:web:5f48c8712f58f2e26fc865"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadStats() {
+        try {
+            const userColl = collection(db, "users");
+            const userSnap = await getCountFromServer(userColl);
+            document.getElementById('userCount').innerText = userSnap.data().count;
+
+            const pkgColl = collection(db, "packages"); 
+            const pkgSnap = await getCountFromServer(pkgColl);
+            document.getElementById('pkgCount').innerText = pkgSnap.data().count;
+        } catch(e) { console.log(e); }
+    }
+    loadStats();
+</script>
+</body>
+</html>
